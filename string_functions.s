@@ -14,12 +14,11 @@
 	.data
 	
 ARRAY_SIZE:
-	.word	10	# Change here to try other values (less than 10)
+	.word	0	# Change here to try other values (less than 10)
 FIBONACCI_ARRAY:
 	.word	1, 1, 2, 3, 5, 8, 13, 21, 34, 55
 STR_str:
 	.asciiz "?@ AB YZ [\\ _` ab yz {|"
-
 	.globl DBG
 	.text
 
@@ -39,18 +38,18 @@ integer_array_sum:
 DBG:	##### DEBUGG BREAKPOINT ######
 
         addi    $v0, $zero, 0           # Initialize Sum to zero.
-	add	$t0, $zero, $zero	# Initialize array index i to zero.
+	add	$s0, $zero, $zero	# Initialize array index i to zero.
 	
 for_all_in_array:
 
 	#### Append a MIPS-instruktion before each of these comments
 	
-	beq 	$t0, $a1 , end_for_all 	# Done if i == N
-	sll 	$t4, $t0, 2 		# offset = 4*i, shift the index stored in $t0 by two bits to the left.
-	add 	$t3, $a0, $t4 		# address = ARRAY + 4*i
-	lw 	$t5, 0($t3)		# n = A[i]
-       	add 	$v0, $v0, $t5 		# Sum = Sum + n
-        addi 	$t0, $t0, 1		# i++ 
+	beq 	$s0, $a1 , end_for_all 	# Done if i == N
+	sll 	$s4, $s0, 2 		# offset = 4*i, shift the index stored in $t0 by two bits to the left.
+	add 	$s3, $a0, $s4 		# address = ARRAY + 4*i
+	lw 	$s5, 0($s3)		# n = A[i]
+       	add 	$v0, $v0, $s5 		# Sum = Sum + n
+        addi 	$s0, $s0, 1		# i++ 
   	j 	for_all_in_array	# next element
 	
 end_for_all:
@@ -75,8 +74,8 @@ string_length:
 	addi $v0, $zero, 0		#initialize $v0 to 0
 
 loop:
-	lb $t1, 0($a0)		# load the next character into t1
-	beq 	$t1, $s5, exit 	# check for the null character
+	lb $s1, 0($a0)		# load the next character into t1
+	beq 	$s1, $s5, exit 	# check for the null character
 	addi 	$a0, $a0, 1 	# increment the string pointer
 	addi 	$v0, $v0, 1 	# increment the count
 	j 	loop 		# return to the top of the loop
@@ -99,7 +98,7 @@ exit:
 string_for_each:
 	addi $s5, $zero, 0 		# store null (0) to $s5
 loop2:
-	lb 	$s6, 0($a0)		# load the next character into t1
+	lb 	$s6, 0($a0)		# load the next character into $s6
 	beq 	$s6, $s5, exit2 	# check for the null character
 	
 	addi 	$sp, $sp, -4
@@ -146,7 +145,55 @@ to_upper:
    	sb	$v0, 0($a0)			# store byte ro $a0
    return_to_caller:
 	jr	$ra				# return to caller
+##############################################################################
+#
+#  DESCRIPTION: Reverse a string
+#	
+#        INPUT: $a0 - address to a NULL terminated string 
+#	 LENGTH: $v0
+#	 TIMES: (length / 2) = $t1
+#	 CNTR_START: $t2
+#	 CNTR_END: (length - 1) $t3
+#
+##############################################################################		
+reverse_string:
+	addi 	$sp, $sp, -4
+	sw	$a0, 0($sp)	# save value of $a0
+	addi 	$sp, $sp, -4
+	sw	$ra, 0($sp)	# save return address before each subroutine call
+	
+	jal	string_length	# call string length function and store length to $v0
+	
+	lw	$ra, 0($sp)	# restore return address after each subroutine call
+	addi 	$sp, $sp, 4
+	
+	lw	$a0, 0($sp)	# load old value of $a0
+	addi 	$sp, $sp, 4	
+	
+	addi 	$t0, $zero, 2	# store dividend (2) to register $t0
+	div 	$t1, $v0, $t0 	# divide length by two
+	
+	addi	$t2, $zero, 0	# cntr or i
+	addi	$t3, $v0, -1	# length - 1
+	
+	addi 	$t6, $a0, 0	# copy first char address
+	
+loop_in_revs:
+	beq	$t2, $t1, return_exit
+	lb 	$t4, 0($a0)	# load left-side char to $t4
+	add	$a0, $a0, $t3	# add address of string, $a0, by the remaining char (length of str)
+	lb 	$t5, 0($a0)	# load right-side char to $t5
+	sb	$t4, 0($a0)	# store value from $t4 to other side (kaswap niya)
+	sub	$a0, $a0, $t3	# restore the pointer to $a0 original address
+	sb	$t5, 0($a0)	# store value from $t5 to left part side
+	addi	$a0, $a0, 1	# increment string pointer from the left
+	addi	$t3, $t3, -2	# decrement string pointer from the right
+	addi	$t2, $t2, 1	#increment cntr for times
+	
+	j 	loop_in_revs
 
+return_exit:
+	jr 	$ra	
 ##############################################################################
 ##############################################################################
 ##
@@ -241,7 +288,7 @@ main:
 	syscall
 
 	##
-	### string_for_each(string, ascii)
+	## string_for_each(string, ascii)
 	##
 	
 	li	$v0, 4
@@ -267,6 +314,20 @@ main:
 	la	$a0, STR_str
 	jal	print_test_string
 
+	##
+	### reverse_string
+	##
+	la	$a0, STR_str
+	jal	reverse_string
+	
+	li	$v0, 4
+	la	$a0, NLNL
+	syscall
+	
+	la	$a0, STR_str
+	jal	print_test_string
+	
+	
 	lw	$ra, 0($sp)	# POP return address
 	addi	$sp, $sp, 4	
 	
