@@ -127,22 +127,21 @@ exit2:
 to_upper:
 
 	#### Write your solution here ####
-	#addi	$a0, $a0, -32 	#Unsa diay ni siya sir?
-	addi	$v0, $zero, 0
-	lb 	$a2, 0($a0)
-	addi	$t2, $zero, 1			# store 1 to $t2, for comparison of $t1
-	slti	$t1, $a2, 123			# set $t1 to 1 if char lesser than or equal to 'z'
-	bne	$t2, $t1, return_to_caller	# if $t1 is 0, don't need to change special char
-	addi	$a2, $a2, -32			# lower the case of a char
-   	slti 	$t1, $a2, 65			# set $t1 to 1 if char - 32 is lesser than 65('A')
-   	bne 	$t1, $t2, store_cap		# if $t1 is 0, meaning greater than 65, store and return capitalized char
-   	addi 	$a2, $a2, 32			# if $t1 is 1, meaning lesser than 65,change char back to upper case
-   	add	$v0, $a2, $zero			# copy value of $a2 to $v0 ($v0 & $v1 passes function results_)
-   	sb 	$v0, 0($a0)			# store byte to $a0
+
+	addi 	$s6, $zero, 0
+	addi	$s5, $zero, 0
+	addi	$s4, $zero, 0
+	
+	lb 	$s4, 0($a0)
+	addi	$s6, $zero, 1			# store 1 to $s6, for comparison of $s5
+	slti	$s5, $s4, 123			# set $s5 to 1 if char lesser than '{ = 123', 'z = 122'
+	bne	$s6, $s5, return_to_caller	# if $s5 is 0, don't need to change special char
+	addi	$s4, $s4, -32			# lower the case of a char
+   	slti 	$s5, $s4, 65			# set $s5 to 1 if char - 32 is lesser than 65('A')
+   	bne 	$s5, $s6, store_cap		# if $s5 is 0, meaning greater than = 65, store and return capitalized char
    	j	return_to_caller
    store_cap:
-   	add	$v0, $a2, $zero			# copy value of $a2 to $v0 ($v0 & $v1 passes function results_)
-   	sb	$v0, 0($a0)			# store byte ro $a0
+   	sb	$s4, 0($a0)			# store byte ro $a0
    return_to_caller:
 	jr	$ra				# return to caller
 ##############################################################################
@@ -151,9 +150,9 @@ to_upper:
 #	
 #        INPUT: $a0 - address to a NULL terminated string 
 #	 LENGTH: $v0
-#	 TIMES: (length / 2) = $t1
-#	 CNTR_START: $t2
-#	 CNTR_END: (length - 1) $t3
+#	 TIMES: (length / 2) = $s1
+#	 CNTR_START: $s2
+#	 CNTR_END: (length - 1) $s3
 #
 ##############################################################################		
 reverse_string:
@@ -170,25 +169,25 @@ reverse_string:
 	lw	$a0, 0($sp)	# load old value of $a0
 	addi 	$sp, $sp, 4	
 	
-	addi 	$t0, $zero, 2	# store dividend (2) to register $t0
-	div 	$t1, $v0, $t0 	# divide length by two
+	addi 	$s0, $zero, 2	# store divisor (2) to register $s1
+	div 	$s1, $v0, $s0 	# divide length by two
 	
-	addi	$t2, $zero, 0	# cntr or i
-	addi	$t3, $v0, -1	# length - 1
+	addi	$s2, $zero, 0	# cntr or i
+	addi	$s3, $v0, -1	# length - 1
 	
-	addi 	$t6, $a0, 0	# copy first char address
+	addi 	$s6, $a0, 0	# copy first char address
 	
 loop_in_revs:
-	beq	$t2, $t1, return_exit
-	lb 	$t4, 0($a0)	# load left-side char to $t4
-	add	$a0, $a0, $t3	# add address of string, $a0, by the remaining char (length of str)
-	lb 	$t5, 0($a0)	# load right-side char to $t5
-	sb	$t4, 0($a0)	# store value from $t4 to other side (kaswap niya)
-	sub	$a0, $a0, $t3	# restore the pointer to $a0 original address
-	sb	$t5, 0($a0)	# store value from $t5 to left part side
+	beq	$s2, $s1, return_exit
+	lb 	$s4, 0($a0)	# load left-side char to $t4
+	add	$a0, $a0, $s3	# add address of string, $a0, by the remaining char (length of str)
+	lb 	$s5, 0($a0)	# load right-side char to $t5
+	sb	$s4, 0($a0)	# store value from $t4 to other side (kaswap niya)
+	sub	$a0, $a0, $s3	# restore the pointer to $a0 original address
+	sb	$s5, 0($a0)	# store value from $t5 to left part side
 	addi	$a0, $a0, 1	# increment string pointer from the left
-	addi	$t3, $t3, -2	# decrement string pointer from the right
-	addi	$t2, $t2, 1	#increment cntr for times
+	addi	$s3, $s3, -2	# decrement string pointer from the right
+	addi	$s2, $s2, 1	#increment cntr for times
 	
 	j 	loop_in_revs
 
